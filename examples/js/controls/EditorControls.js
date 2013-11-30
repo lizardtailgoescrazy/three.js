@@ -4,6 +4,12 @@
  * @author alteredq / http://alteredqualia.com/
  * @author WestLangley / http://github.com/WestLangley
  */
+ 
+ var rewindX = 0;
+ var rewindY = 0;
+ 
+ var remoteX = 0;
+ var remoteY = 0;
 
 THREE.EditorControls = function ( object, domElement ) {
 
@@ -93,13 +99,60 @@ THREE.EditorControls = function ( object, domElement ) {
 	};
 
 	// mouse
+	
+	var movX = 0;
+	var movY = 0;
+	
+	/**NETWORK INTERFACE**/
+	socket.on('remoteCamera', function(data) {
+		console.log("Got instructions to move the camera.");
+		
+		if(!amIAdmin && cameraControl){
+			remoteX += data.stuff.movX;
+			remoteY += data.stuff.movY;
+			return false;
+		}
+		
+		if ( data.stuff.type === STATE.ROTATE ) {
+
+			scope.rotate( new THREE.Vector3( - data.stuff.movX * 0.005, - data.stuff.movY * 0.005, 0 ) );
+
+		} else if ( data.stuff.type === STATE.ZOOM ) {
+
+			scope.zoom( new THREE.Vector3( 0, 0, data.stuff.movY ) );
+
+		} else if ( data.stuff.type === STATE.PAN ) {
+
+			scope.pan( new THREE.Vector3( - data.stuff.movX, data.stuff.movY, 0 ) );
+
+		}
+		return true;		
+	});
+	
+	socket.on('returnControlSuccess', function(data) {
+		console.log("Got instructions to return control of the camera.");
+
+		//rewind movement
+		scope.rotate( new THREE.Vector3( - (rewindX) * 0.005, - (rewindY) * 0.005, 0 ) );
+		
+		//do remote movement
+		scope.rotate( new THREE.Vector3( - (remoteX) * 0.005, - (remoteY) * 0.005, 0 ) );
+		
+		rewindX = 0;
+		rewindY = 0;
+		remoteX = 0;
+		remoteY = 0;
+	});
 
 	function onMouseDown( event ) {
 
-		if ( scope.enabled === false ) return;
+		if ( scope.enabled === false || cameraControl === false) return;
 
 		event.preventDefault();
-
+		
+		movX = 0;
+        movY = 0;
+		
 		if ( event.button === 0 ) {
 
 			state = STATE.ROTATE;
@@ -121,12 +174,22 @@ THREE.EditorControls = function ( object, domElement ) {
 
 	function onMouseMove( event ) {
 
-		if ( scope.enabled === false ) return;
+		if ( scope.enabled === false || cameraControl === false) return;
 
 		event.preventDefault();
 
 		var movementX = event.movementX || event.webkitMovementX || event.mozMovementX || event.oMovementX || 0;
 		var movementY = event.movementY || event.webkitMovementY || event.mozMovementY || event.oMovementY || 0;
+		
+		movX += movementX;
+		movY += movementY;
+		
+		if(!amIAdmin){
+			rewindX -= movementX;
+			rewindY -= movementY;
+		}
+		
+		//console.log(movementX + " - " + movementY);
 
 		if ( state === STATE.ROTATE ) {
 
@@ -146,7 +209,21 @@ THREE.EditorControls = function ( object, domElement ) {
 
 	function onMouseUp( event ) {
 
-		if ( scope.enabled === false ) return;
+		if ( scope.enabled === false || cameraControl === false) return;
+		
+		//var distance = onMouseDownPosition.distanceTo( onMouseUpPosition );
+		
+		var toBroadcast = true;
+		
+		if(toBroadcast && amIAdmin){
+			var msg = {
+				type: state,
+				movX: movX,
+				movY: movY
+			};
+			console.log(msg);
+			sendToServer("cameraControl", msg);
+		}
 
 		document.removeEventListener( 'mousemove', onMouseMove, false );
 		document.removeEventListener( 'mouseup', onMouseUp, false );
@@ -157,7 +234,7 @@ THREE.EditorControls = function ( object, domElement ) {
 
 	function onMouseWheel( event ) {
 
-		if ( scope.enabled === false ) return;
+		if ( scope.enabled === false || cameraControl === false) return;
 
 		var delta = 0;
 

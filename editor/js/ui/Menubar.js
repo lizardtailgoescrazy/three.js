@@ -8,7 +8,7 @@ var Menubar = function ( signals ) {
 	container.add( new Menubar.Edit( signals ) );
 	container.add( new Menubar.Add( signals ) );
 	container.add( new Menubar.Help( signals ) );
-
+	//container.add( new Menubar.Control( signals ));
 	return container;
 
 }

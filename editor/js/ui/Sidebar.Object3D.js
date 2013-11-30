@@ -223,145 +223,181 @@ Sidebar.Object3D = function ( signals ) {
 	}
 
 	function updateScaleX() {
+	
+		var toBroadcast = false;
+		if(typeof this.dom !== 'undefined' && this.dom.mouseEvent === 'mouseup'){
+			toBroadcast = true;
+		}
 
 		uniformScale = objectScaleX.getValue();
-		update();
+		update(toBroadcast);
 
 	}
 
 	function updateScaleY() {
-
+		var toBroadcast = false;
+		if(typeof this.dom !== 'undefined' && this.dom.mouseEvent === 'mouseup'){
+			toBroadcast = true;
+		}
 		uniformScale = objectScaleY.getValue();
-		update();
+		update(toBroadcast);
 
 	}
 
 	function updateScaleZ() {
-
+		var toBroadcast = false;
+		if(typeof this.dom !== 'undefined' && this.dom.mouseEvent === 'mouseup'){
+			toBroadcast = true;
+		}
 		uniformScale = objectScaleZ.getValue();
-		update();
+		update(toBroadcast);
 
 	}
+	
+	/**NETWORK INTERFACE**/
+	socket.on('modifyObj', function(data) {
+		console.log("Got instructions to modify an object.");
+		
+		var remoteSelection = selectRemoteObject(data, globalObjects,globalHelpers);                                     
+		                                                                                                    
+		if(remoteSelection != null){                                                                   
+			console.log("Yay! Selected object "+remoteSelection.id);                                        
+			                                                                                                
+			remoteSelection.position.x = data.stuff.alterations.objPositionX;
+			remoteSelection.position.y = data.stuff.alterations.objPositionY;
+			remoteSelection.position.z = data.stuff.alterations.objPositionZ;
+                             
+			remoteSelection.rotation.x = data.stuff.alterations.objRotationX;
+			remoteSelection.rotation.y = data.stuff.alterations.objRotationY;
+			remoteSelection.rotation.z = data.stuff.alterations.objRotationZ;
+			
+			remoteSelection.scale.x = data.stuff.alterations.objScaleX;
+			remoteSelection.scale.y = data.stuff.alterations.objScaleY;
+			remoteSelection.scale.z = data.stuff.alterations.objScaleZ;
+			
+			signals.objectChanged.dispatch( remoteSelection );
 
-	function update() {
+		}
+		
+	});
 
-		if ( selected ) {
-
-			selected.name = objectName.getValue();
-
-			if ( selected.parent !== undefined ) {
-
-				var newParentId = parseInt( objectParent.getValue() );
-
-				if ( selected.parent.id !== newParentId && selected.id !== newParentId ) {
-
-					var parent = scene.getObjectById( newParentId, true );
-
-					if ( parent === undefined ) {
-
-						parent = scene;
-
-					}
-
-					parent.add( selected );
-
-					signals.sceneChanged.dispatch( scene );
-
-				}
-
+	function update(arg) {
+		var toBroadcast;
+		if(typeof this.dom !== 'undefined'){
+			if(this.dom.mouseEvent ==="mouseup"){
+				toBroadcast = true;
 			}
+			else{
+				toBroadcast = false;
+			}
+		}
+		else if(typeof arg !== 'undefined'){
+			toBroadcast = arg;
+		}
+		else{
+			alert("Something went wrong !");
+			return false;
+		}
+	
+		var currentSelection = null;
+		
+		currentSelection = selected;
 
-			selected.position.x = objectPositionX.getValue();
-			selected.position.y = objectPositionY.getValue();
-			selected.position.z = objectPositionZ.getValue();
+		if ( currentSelection ) {
+			currentSelection.name = objectName.getValue();
+			if ( currentSelection.parent !== undefined ) {
+				var newParentId = parseInt( objectParent.getValue() );
+				if ( currentSelection.parent.id !== newParentId && currentSelection.id !== newParentId ) {
+					var parent = scene.getObjectById( newParentId, true );
+					if ( parent === undefined ) {
+						parent = scene;
+					}
+					parent.add( currentSelection );
+					signals.sceneChanged.dispatch( scene );
+				}
+			}
+			
+			currentSelection.position.x = objectPositionX.getValue();
+			currentSelection.position.y = objectPositionY.getValue();
+			currentSelection.position.z = objectPositionZ.getValue();
 
-			selected.rotation.x = objectRotationX.getValue();
-			selected.rotation.y = objectRotationY.getValue();
-			selected.rotation.z = objectRotationZ.getValue();
+			currentSelection.rotation.x = objectRotationX.getValue();
+			currentSelection.rotation.y = objectRotationY.getValue();
+			currentSelection.rotation.z = objectRotationZ.getValue();
 
 			if ( scaleLock ) {
-
 				objectScaleX.setValue( uniformScale * scaleRatioX );
 				objectScaleY.setValue( uniformScale * scaleRatioY );
 				objectScaleZ.setValue( uniformScale * scaleRatioZ );
-
 			}
 
-			selected.scale.x = objectScaleX.getValue();
-			selected.scale.y = objectScaleY.getValue();
-			selected.scale.z = objectScaleZ.getValue();
+			currentSelection.scale.x = objectScaleX.getValue();
+			currentSelection.scale.y = objectScaleY.getValue();
+			currentSelection.scale.z = objectScaleZ.getValue();
 
-			if ( selected.fov !== undefined ) {
-
-				selected.fov = objectFov.getValue();
-				selected.updateProjectionMatrix();
-
+			if ( currentSelection.fov !== undefined ) {
+				currentSelection.fov = objectFov.getValue();
+				currentSelection.updateProjectionMatrix();
 			}
 
-			if ( selected.near !== undefined ) {
-
-				selected.near = objectNear.getValue();
-
+			if ( currentSelection.near !== undefined ) {
+				currentSelection.near = objectNear.getValue();
 			}
 
-			if ( selected.far !== undefined ) {
-
-				selected.far = objectFar.getValue();
-
+			if ( currentSelection.far !== undefined ) {
+				currentSelection.far = objectFar.getValue();
 			}
 
-			if ( selected.intensity !== undefined ) {
-
-				selected.intensity = objectIntensity.getValue();
-
+			if ( currentSelection.intensity !== undefined ) {
+				currentSelection.intensity = objectIntensity.getValue();
 			}
 
-			if ( selected.color !== undefined ) {
-
-				selected.color.setHex( objectColor.getHexValue() );
-
+			if ( currentSelection.color !== undefined ) {
+				currentSelection.color.setHex( objectColor.getHexValue() );
 			}
 
-			if ( selected.groundColor !== undefined ) {
-
-				selected.groundColor.setHex( objectGroundColor.getHexValue() );
-
+			if ( currentSelection.groundColor !== undefined ) {
+				currentSelection.groundColor.setHex( objectGroundColor.getHexValue() );
 			}
 
-			if ( selected.distance !== undefined ) {
-
-				selected.distance = objectDistance.getValue();
-
+			if ( currentSelection.distance !== undefined ) {
+				currentSelection.distance = objectDistance.getValue();
 			}
 
-			if ( selected.angle !== undefined ) {
-
-				selected.angle = objectAngle.getValue();
-
+			if ( currentSelection.angle !== undefined ) {
+				currentSelection.angle = objectAngle.getValue();
 			}
 
-			if ( selected.exponent !== undefined ) {
-
-				selected.exponent = objectExponent.getValue();
-
+			if ( currentSelection.exponent !== undefined ) {
+				currentSelection.exponent = objectExponent.getValue();
 			}
 
-			selected.visible = objectVisible.getValue();
+			currentSelection.visible = objectVisible.getValue();
 
 			try {
-
-				selected.userData = JSON.parse( objectUserData.getValue() );
-
-			} catch ( error ) {
-
+				currentSelection.userData = JSON.parse( objectUserData.getValue() );
+			} 
+			catch ( error ) {
 				console.log( error );
-
 			}
-
-			signals.objectChanged.dispatch( selected );
-
+			if(toBroadcast){
+				var msg = {
+					objID: currentSelection.id,
+					objPositionX : currentSelection.position.x,
+					objPositionY : currentSelection.position.y,
+					objPositionZ : currentSelection.position.z,
+					objRotationX : currentSelection.rotation.x,
+					objRotationY : currentSelection.rotation.y,
+					objRotationZ : currentSelection.rotation.z,
+					objScaleX : currentSelection.scale.x,
+					objScaleY : currentSelection.scale.y,
+					objScaleZ : currentSelection.scale.z
+				};
+				console.log(msg);
+				sendToServer("modifyThisObj", msg);
+			}
+			signals.objectChanged.dispatch( currentSelection );
 		}
-
 	}
 
 	function updateRows() {
@@ -456,7 +492,6 @@ Sidebar.Object3D = function ( signals ) {
 	} );
 
 	signals.objectSelected.add( function ( object ) {
-
 		selected = object;
 		updateUI();
 

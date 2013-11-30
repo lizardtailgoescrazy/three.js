@@ -2,6 +2,7 @@ three.js
 ========
 #### lizardtailgoescrazy ####
 Adding support for multi user editing via node.js
+NOTE: This support requires a backend user management server, which is sadly, no longer deployed live. PM me for details on deployment.
 
 
 #### JavaScript 3D library ####

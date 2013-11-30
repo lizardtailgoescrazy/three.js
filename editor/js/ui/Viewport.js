@@ -1,4 +1,61 @@
+function selectRemoteObject(remoteData, objects, helpersToObjects){
+	var objID = remoteData.stuff.objID;
+	var helperFlag = false;
+	//Find object using id
+	var length = objects.length;
+	for (var i = 0; i < length; i++) {
+		if(objID == objects[i].id){
+			break;
+		}
+	}
+	if(!(objects[i])){
+	//Object not found, look for helper objects
+		for (var i = 0; i < length; i++) {
+			if((helpersToObjects[objects[i].id] != undefined) && (helpersToObjects[objects[i].id].id == objID)){
+				helperFlag = true;
+				break;
+			}
+		}
+	}
+	var remoteSelection = null;
+	
+	if(helperFlag && helpersToObjects[ objects[i].id ]){
+		remoteSelection = helpersToObjects[ objects[i].id ];
+	}
+	else if(objects[i]){
+		remoteSelection = objects[i];
+	}
+	return remoteSelection;
+}
+
 var Viewport = function ( signals ) {
+
+	/**NETWORK INTERFACES**/
+	socket.on('travObj', function(data) {
+		console.log("Got instructions to move an object.");
+		
+		var localSelection = selected;
+		
+		var remoteSelection = selectRemoteObject(data, globalObjects, globalHelpers);
+		if(!remoteSelection == null){
+			alert("Remote selection by user("+data.userID+" invalid !");
+			return false;
+		}
+		remoteSelection.position.x = modifierAxis.x === 1 ? data.stuff.posX : intersectionPlane.position.x;
+		remoteSelection.position.y = modifierAxis.y === 1 ? data.stuff.posY : intersectionPlane.position.y;
+		remoteSelection.position.z = modifierAxis.z === 1 ? data.stuff.posZ : intersectionPlane.position.z;
+
+
+		signals.objectChanged.dispatch( remoteSelection );
+
+		render();
+		
+		if(localSelection != null){
+			signals.objectChanged.dispatch( localSelection );
+			render();
+		}
+		
+	});
 
 	var container = new UI.Panel();
 	container.setPosition( 'absolute' );
@@ -178,13 +235,15 @@ var Viewport = function ( signals ) {
 	var onMouseUp = function ( event ) {
 
 		onMouseUpPosition.set( event.layerX, event.layerY );
+		
+		var distance = onMouseDownPosition.distanceTo( onMouseUpPosition )
 
-		if ( onMouseDownPosition.distanceTo( onMouseUpPosition ) < 1 ) {
-
+		if ( distance < 1 ) {
+		//Selecting object
 			var intersects = getIntersects( event, objects );
 
 			if ( intersects.length > 0 ) {
-
+			//Object found at click position, select object
 				selected = intersects[ 0 ].object;
 
 				if ( helpersToObjects[ selected.id ] !== undefined ) {
@@ -196,7 +255,7 @@ var Viewport = function ( signals ) {
 				signals.objectSelected.dispatch( selected );
 
 			} else {
-
+				//No object found at click location, seletc camera
 				controls.enabled = true;
 
 				selected = camera;
@@ -207,6 +266,21 @@ var Viewport = function ( signals ) {
 
 			render();
 
+		}
+		else{
+			//Moving object
+		
+		
+			//Bad hack, must rework
+			if(selected.id > 6){
+				var msg = {
+					objID: selected.id,
+					posX: selected.position.x,
+					posY: selected.position.y,
+					posZ: selected.position.z
+				};
+				sendToServer("moveThisObj", msg);
+			}		
 		}
 
 		document.removeEventListener( 'mousemove', onMouseMove );
@@ -645,7 +719,9 @@ var Viewport = function ( signals ) {
 		renderer.clear();
 		renderer.render( scene, camera );
 		renderer.render( sceneHelpers, camera );
-
+		//Assuming this is called after all adds and deletes 
+		globalObjects = objects;
+		globalHelpers = helpersToObjects;
 	}
 
 	return container;

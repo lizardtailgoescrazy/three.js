@@ -67,7 +67,16 @@
 		</style>
 	</head>
 	<body>
-
+		<script src="http://code.jquery.com/jquery-1.9.1.js"></script>
+		<script>
+		var globalObjects = null;
+		var globalHelpers = null;
+		var amIAdmin = false;
+		var cameraControl = false;
+		</script>
+		<script src="http://arbiter:8080/socket.io/socket.io.js"></script>
+		<script src="js/libs/nwComm.js"></script>
+		<script src="js/libs/nwIntercept.js"></script>
 		<script src="../build/three.js"></script>
 		<script src="../examples/js/libs/system.min.js"></script>
 
@@ -152,8 +161,6 @@
 				windowResize: new SIGNALS.Signal()
 
 			};
-
-			//
 
 			var viewport = new Viewport( signals );
 			viewport.setTop( '32px' );
@@ -557,7 +564,17 @@
 			window.addEventListener( 'resize', onWindowResize, false );
 
 			onWindowResize();
+			
+			/*window.addEventListener( 'click', function(event){
+				console.log(event);
+			}, false);*/
 
 		</script>
+		<script src="js/libs/eventSimulate.js"></script>		
+		<script>
+			//console.log(Viewport);
+			
+		</script>
+		
 	</body>
 </html>

@@ -650,6 +650,8 @@ UI.Number = function ( number ) {
 	var onMouseMove = function ( event ) {
 
 		var currentValue = dom.value;
+		
+		dom.mouseEvent = event.type;
 
 		var movementX = event.movementX || event.webkitMovementX || event.mozMovementX || 0;
 		var movementY = event.movementY || event.webkitMovementY || event.mozMovementY || 0;
@@ -659,12 +661,20 @@ UI.Number = function ( number ) {
 		var number = onMouseDownValue + ( distance / ( event.shiftKey ? 5 : 50 ) ) * scope.step;
 
 		dom.value = Math.min( scope.max, Math.max( scope.min, number ) ).toFixed( scope.precision );
-
-		if ( currentValue !== dom.value && scope.onChangeCallback ) scope.onChangeCallback();
+	
+		if ( currentValue !== dom.value && scope.onChangeCallback ) {
+			scope.onChangeCallback();
+		}
 
 	};
 
 	var onMouseUp = function ( event ) {
+	
+		dom.mouseEvent = event.type;
+		
+		if (scope.onChangeCallback ) {
+			scope.onChangeCallback();
+		}
 
 		document.removeEventListener( 'mousemove', onMouseMove, false );
 		document.removeEventListener( 'mouseup', onMouseUp, false );
