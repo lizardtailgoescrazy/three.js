@@ -1,5 +1,8 @@
 three.js
 ========
+#### lizardtailgoescrazy ####
+Adding support for multi user editing via node.js
+
 
 #### JavaScript 3D library ####
 
